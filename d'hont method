@@ -1,0 +1,62 @@
+# Function to allocate seats using D'Hondt method with tie-breaking rule
+allocate_seats_dhondt_tie_breaking <- function(votes, seats) {
+  num_parties <- length(votes)
+  allocated_seats <- rep(0, num_parties)
+  
+  # Initialize divisors
+  divisors <- rep(1, num_parties)
+  
+  # Allocate seats
+  for (i in 1:seats) {
+    quotients <- votes / divisors
+    max_quotient <- max(quotients)
+    next_seat_candidates <- which(quotients == max_quotient)
+    
+    # If there's a tie, select the party with fewer seats
+    if (length(next_seat_candidates) > 1) {
+      next_seat_candidates <- next_seat_candidates[allocated_seats[next_seat_candidates] == min(allocated_seats[next_seat_candidates])]
+    }
+    
+    next_seat <- next_seat_candidates[1] # Select the first party in the list
+    allocated_seats[next_seat] <- allocated_seats[next_seat] + 1
+    divisors[next_seat] <- divisors[next_seat] + 1
+  }
+  
+  return(allocated_seats)
+}
+
+# Example usage
+n_parties <- 4
+n_seats <- 7
+party_votes <- c(12000, 7500, 4500, 3000)  # Example votes for each party
+
+allocated_seats <- allocate_seats_dhondt_tie_breaking(party_votes, n_seats)
+print(allocated_seats)
+
+
+####
+require(ggplot2)
+
+
+# Plotting
+data <- data.frame(party = paste0("party", seq_along(allocated_seats)),
+                  seats = allocated_seats);data
+
+data$fraction <- data$seats / sum(data$seats)
+
+# Compute the cumulative percentages (top of each rectangle)
+data$ymax <- cumsum(data$fraction)
+
+# Compute the bottom of each rectangle
+data$ymin <- c(0, head(data$ymax, n=-1))
+
+# Compute label position
+data$labelPosition <- (data$ymax + data$ymin) / 2
+
+# Compute a good label
+data$label <- paste0(data$party, "\n value: ", data$seats)
+
+# Make the plot
+pie(data$seats, labels = data$party,
+     main="Seats by Party")
+
